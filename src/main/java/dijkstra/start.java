@@ -1,18 +1,14 @@
 package dijkstra;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class start {
+
+
     public static void main(String[] args) {
+        System.out.println(dijkstra("KUZ", graphKaspr()).getPeakTimeFromStart());
 
-
-        System.out.println(dijkstra("KUZ", graphKaspr()));
-
-
-        System.out.println(dijkstra("A", graphABCD()));
+        System.out.println(bestPath("SWI", dijkstra("KUZ", graphKaspr())).stream().map(pathPoint -> pathPoint.getPoint() + " " + pathPoint.getTime()).toList());
     }
 
     public static Map<String, Map<String, Integer>> graphABCD() {
@@ -90,15 +86,14 @@ public class start {
         return peakAndNeighbors;
     }
 
-    public static Map<String, Integer> dijkstra(String from, Map<String, Map<String, Integer>> peakAndNeighbors) {
+    public static DijkstraResult dijkstra(String from, Map<String, Map<String, Integer>> peakAndNeighbors) {
+        DijkstraResult dijkstraResult = new DijkstraResult();
         Set<String> checked = new HashSet<>();
-        Map<String, Integer> peakAndTime = new HashMap<>();
-        peakAndTime.put(from, 0);
-
-        while (peakAndTime.size() > checked.size()) {
+        dijkstraResult.putPeakTimeFromStart(from, 0);
+        while (dijkstraResult.getPeakTimeFromStart().size() > checked.size()) {
             int bestPlaceTime = Integer.MAX_VALUE;
             String bestPlace = null;
-            for (Map.Entry<String, Integer> entry : peakAndTime.entrySet()) {
+            for (Map.Entry<String, Integer> entry : dijkstraResult.getPeakTimeFromStart().entrySet()) {
                 if (!checked.contains(entry.getKey())) {
                     if (entry.getValue() < bestPlaceTime) {
                         bestPlaceTime = entry.getValue();
@@ -108,16 +103,31 @@ public class start {
             }
             checked.add(bestPlace);
             for (Map.Entry<String, Integer> entry : peakAndNeighbors.get(bestPlace).entrySet()) {
-                if (!peakAndTime.containsKey(entry.getKey())) {
-                    peakAndTime.put(entry.getKey(), entry.getValue() + bestPlaceTime);
+                String getEntryKey = entry.getKey();
+                Integer getPeakTime = dijkstraResult.getPeakTimeFromStart().get(getEntryKey);
+                if (!dijkstraResult.getPeakTimeFromStart().containsKey(getEntryKey)) {
+                    dijkstraResult.putPeakTimeFromStart(getEntryKey, entry.getValue() + bestPlaceTime);
+                    dijkstraResult.putPeakFromWho(getEntryKey, bestPlace);
                 } else {
-                    if (entry.getValue() + bestPlaceTime < peakAndTime.get(entry.getKey())) {
-                        peakAndTime.put(entry.getKey(), entry.getValue() + bestPlaceTime);
+                    if (entry.getValue() + bestPlaceTime < getPeakTime) {
+                        dijkstraResult.putPeakTimeFromStart(getEntryKey, entry.getValue() + bestPlaceTime);
+                        dijkstraResult.putPeakFromWho(getEntryKey, bestPlace);
                     }
                 }
             }
         }
-        return peakAndTime;
+        return dijkstraResult;
 
+    }
+
+    public static List<pathPoint> bestPath(String to, DijkstraResult dijkstraResult) {
+        List<pathPoint> path = new ArrayList<>();
+
+        String current = to;
+        while (current != null) {
+            path.add(new pathPoint(current, dijkstraResult.getPeakTimeFromStart().get(current)));
+            current = dijkstraResult.getPeakFromWho().get(current);
+        }
+        return path.reversed();
     }
 }

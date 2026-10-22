@@ -11,20 +11,20 @@ class DijkstraTest {
     @Test
     void dijkstraReturnCorrectValuesGraphABCD() {
 
-        Map<String,Integer> dijkstraMethodResult = start.dijkstra("A",start.graphABCD());
+        DijkstraResult dijkstraMethodResult = start.dijkstra("A",start.graphABCD());
         Map<String,Integer> expectedDijkstraResult = new HashMap<>();
         expectedDijkstraResult.put("A",0);
         expectedDijkstraResult.put("B",7);
         expectedDijkstraResult.put("C",3);
         expectedDijkstraResult.put("D",9);
 
-        assertEquals(expectedDijkstraResult,dijkstraMethodResult);
+        assertEquals(expectedDijkstraResult,dijkstraMethodResult.getPeakTimeFromStart());
 
 
     }
     @Test
     void dijkstraReturnCorrectValuesGraphKASP(){
-        Map<String,Integer> dijkstraMethodResult = start.dijkstra("KUZ",start.graphKaspr());
+       DijkstraResult dijkstraMethodResult = start.dijkstra("KUZ",start.graphKaspr());
         Map<String,Integer> expectedDijkstraResult = new HashMap<>();
         expectedDijkstraResult.put("KASP",210);
         expectedDijkstraResult.put("KUZ",0);
@@ -36,7 +36,7 @@ class DijkstraTest {
         expectedDijkstraResult.put("CZS",191);
         expectedDijkstraResult.put("HALA",143);
 
-        assertEquals(expectedDijkstraResult,dijkstraMethodResult);
+        assertEquals(expectedDijkstraResult,dijkstraMethodResult.getPeakTimeFromStart());
 
     }
 
