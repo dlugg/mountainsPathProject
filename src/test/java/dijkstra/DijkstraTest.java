@@ -2,7 +2,9 @@ package dijkstra;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +40,17 @@ class DijkstraTest {
 
         assertEquals(expectedDijkstraResult,dijkstraMethodResult.getPeakTimeFromStart());
 
+
+
+    }
+
+    @Test
+    void pathWithMandatoryPointsReturnCorrectValues(){
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ","CZS","KASP","KUZ"));
+        List<pathPoint> expectedList = new ArrayList<>(List.of(new pathPoint("KUZ",0),new pathPoint("MUR",140), new pathPoint("CZS" ,191),
+                new pathPoint("MUR", 226), new pathPoint("HALA", 229), new pathPoint("KASP", 326), new pathPoint("KUZ", 465)));
+        List<pathPoint> methodResult = start.pathWithMandatoryPoints(listOfPoints);
+        assertEquals(expectedList, methodResult );
     }
 
 }
