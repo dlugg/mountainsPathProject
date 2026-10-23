@@ -51,7 +51,7 @@ public class start {
 
         Map<String, Integer> neighborsOfCZS = new HashMap<>();
         neighborsOfCZS.put("KARB", 50);
-        neighborsOfCZS.put("MUR", 3);
+        neighborsOfCZS.put("MUR", 35);
         neighborsOfCZS.put("SG", 92);
         peakAndNeighbors.put("CZS", neighborsOfCZS);
 
