@@ -2,10 +2,10 @@ package dijkstra;
 
 import java.util.Objects;
 
-public class pathPoint {
+public class PathPoint {
     private final String point;
     private final int time;
-    pathPoint(String point, int time){
+    PathPoint(String point, int time){
         this.point = point;
         this.time = time;
     }
@@ -21,7 +21,7 @@ public class pathPoint {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        pathPoint pathPoint = (pathPoint) o;
+        PathPoint pathPoint = (PathPoint) o;
         return time == pathPoint.time && Objects.equals(point, pathPoint.point);
     }
 

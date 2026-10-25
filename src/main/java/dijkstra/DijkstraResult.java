@@ -4,23 +4,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DijkstraResult {
-    private final  Map<String,Integer> peakTimeFromStart = new HashMap<>();
-    private final Map<String,String> peakFromWho = new HashMap<>();
+    private final  Map<String,Integer> timeFromStart = new HashMap<>();
+    private final Map<String,String> previous = new HashMap<>();
 
-    public Map<String, Integer> getPeakTimeFromStart() {
-        return peakTimeFromStart;
+    public Map<String, Integer> getTimeFromStart() {
+        return timeFromStart;
     }
 
-    public Map<String, String> getPeakFromWho() {
-        return peakFromWho;
+    public Map<String, String> getPrevious() {
+        return previous;
     }
 
-    public void putPeakTimeFromStart(String peak, Integer time) {
-        peakTimeFromStart.put(peak,time);
+    public void putTimeFromStart(String peak, Integer time) {
+        timeFromStart.put(peak,time);
     }
 
-    public void putPeakFromWho(String peak, String fromWho) {
-        peakFromWho.put(peak,fromWho);
+    public void putPrevious(String peak, String fromWho) {
+        previous.put(peak,fromWho);
     }
 
 }
