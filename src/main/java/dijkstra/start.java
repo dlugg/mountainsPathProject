@@ -6,12 +6,8 @@ public class start {
 
 
     public static void main(String[] args) {
-//        System.out.println(dijkstra("KUZ", graphKaspr()).getPeakTimeFromStart());
-//
-//        System.out.println(bestPath("KASP", dijkstra("CZS", graphKaspr())).stream().map(pathPoint -> pathPoint.getPoint() + " " + pathPoint.getTime()).toList());
-        List<String> list = new ArrayList<>(List.of("KUZ", "CZS", "KASP","KUZ"));
 
-        System.out.println(pathWithMandatoryPoints(list).stream().map(pathPoint -> pathPoint.getPoint() + " " + pathPoint.getTime()).toList());
+
     }
 
     public static Map<String, Map<String, Integer>> graphABCD() {
@@ -86,6 +82,7 @@ public class start {
         neighborsOfKosc.put("KARB", 36);
         peakAndNeighbors.put("KOSC", neighborsOfKosc);
 
+
         return peakAndNeighbors;
     }
 
@@ -123,32 +120,38 @@ public class start {
 
     }
 
-    public static List<pathPoint> bestPath(String to, DijkstraResult dijkstraResult) {
+    public static Optional<List<pathPoint>> bestPath(String to, DijkstraResult dijkstraResult) {
         List<pathPoint> path = new ArrayList<>();
-
+        if (!dijkstraResult.getPeakTimeFromStart().containsKey(to)) {
+            return Optional.empty();
+        }
         String current = to;
         while (current != null) {
             path.add(new pathPoint(current, dijkstraResult.getPeakTimeFromStart().get(current)));
             current = dijkstraResult.getPeakFromWho().get(current);
         }
-        return path.reversed();
+        return Optional.of(path.reversed());
     }
 
-    public static List<pathPoint> pathWithMandatoryPoints(List<String> pointList) {
+    public static Optional<List<pathPoint>> pathWithMandatoryPoints(List<String> pointList, Map<String, Map<String, Integer>> graph) {
         List<pathPoint> resultPath = new ArrayList<>();
+
         for (int i = 0; i < pointList.size() - 1; i++) {
-            if (i == 0) {
-                resultPath.addAll(bestPath(pointList.get(i + 1), dijkstra(pointList.get(i), graphKaspr())));
+            Optional<List<pathPoint>> pathPart = bestPath(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
+            if (pathPart.isEmpty()) {
+                return Optional.empty();
             }
-            else {
-                List<pathPoint> temp = bestPath(pointList.get(i+1),dijkstra(pointList.get(i),graphKaspr()));
+            if (i == 0) {
+                resultPath.addAll(pathPart.get());
+            } else {
+                List<pathPoint> temp = pathPart.get();
                 temp.removeFirst();
                 int time = resultPath.getLast().getTime();
                 for (int j = 0; j < temp.size(); j++) {
-                    resultPath.add(new pathPoint(temp.get(j).getPoint(),temp.get(j).getTime()+time));
+                    resultPath.add(new pathPoint(temp.get(j).getPoint(), temp.get(j).getTime() + time));
                 }
             }
         }
-        return resultPath;
+        return Optional.of(resultPath);
     }
 }
