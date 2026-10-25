@@ -105,7 +105,7 @@ public class start {
                 }
             }
             checked.add(bestPlace);
-            for (Map.Entry<String, Integer> entry : peakAndNeighbors.get(bestPlace).entrySet()) {
+            for (Map.Entry<String, Integer> entry : peakAndNeighbors.getOrDefault(bestPlace,Map.of()).entrySet()) {
                 String getEntryKey = entry.getKey();
                 Integer getPeakTime = dijkstraResult.getPeakTimeFromStart().get(getEntryKey);
                 if (!dijkstraResult.getPeakTimeFromStart().containsKey(getEntryKey)) {

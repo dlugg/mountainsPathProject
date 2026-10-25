@@ -43,6 +43,45 @@ class DijkstraTest {
 
 
     }
+    @Test
+    void dijkstraHandlesPointWithoutOutgoingTrails(){
+        Map<String, Map<String, Integer>> graph = start.graphKaspr();
+        graph.get("KASP").put("TOP",5);
+
+        DijkstraResult dijkstraMethodResult = start.dijkstra("KUZ", graph);
+        Map<String, Integer> expectedDijkstraResult = new HashMap<>();
+        expectedDijkstraResult.put("KASP", 210);
+        expectedDijkstraResult.put("KUZ", 0);
+        expectedDijkstraResult.put("SG", 283);
+        expectedDijkstraResult.put("SWI", 311);
+        expectedDijkstraResult.put("KARB", 241);
+        expectedDijkstraResult.put("KOSC", 287);
+        expectedDijkstraResult.put("MUR", 140);
+        expectedDijkstraResult.put("CZS", 191);
+        expectedDijkstraResult.put("HALA", 143);
+        expectedDijkstraResult.put("TOP",215);
+
+        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getPeakTimeFromStart());
+
+    }
+
+    @Test
+    void bestPathToReachablePointReturnsPath() {
+        Optional<List<pathPoint>> bestPathResult = start.bestPath("D", start.dijkstra("A", start.graphABCD()));
+        List<pathPoint> expectedList = new ArrayList<>(List.of(new pathPoint("A", 0), new pathPoint("C", 3),
+                new pathPoint("B", 7), new pathPoint("D", 9)));
+        assertEquals(expectedList, bestPathResult.get());
+    }
+
+    @Test
+    void bestPathToUnreachablePointIsEmpty(){
+        Map<String, Map<String, Integer>> graph = start.graphKaspr();
+        Map<String, Integer> neighborsOfPark = new HashMap<>();
+        neighborsOfPark.put("KUZ", 10);
+        graph.put("PARK", neighborsOfPark);
+        Optional<List<pathPoint>> result = start.bestPath("PARK", start.dijkstra("KUZ", graph));
+        assertTrue(result.isEmpty());
+    }
 
     @Test
     void pathWithMandatoryPointsReturnCorrectValues(){
