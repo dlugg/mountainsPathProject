@@ -1,5 +1,9 @@
 package dijkstra;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.File;
 import java.util.*;
 
 public class RouteFinder {
@@ -7,7 +11,26 @@ public class RouteFinder {
 
     public static void main(String[] args) {
 
+        ObjectMapper mapper = new ObjectMapper();
+        OsmFile file = mapper.readValue(new File("src/main/resources/osm-murowaniec.json"), OsmFile.class);
+    }
 
+    public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
+        return mapper.readValue(new File(pathname), OsmFile.class);
+    }
+
+    public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
+        Map<Long, Map<Long, Integer>> graph = new HashMap<>();
+        for (int i = 0; i < file.elements().size(); i++) {
+            OsmElement element = file.elements().get(i);
+            if (element.isTrail()) {
+                for (int j = 0; j < element.nodes().size() - 1; j++) {
+                    graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1), 1);
+                    graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j), 1);
+                }
+            }
+        }
+        return graph;
     }
 
     public static Map<String, Map<String, Integer>> graphABCD() {
@@ -92,8 +115,6 @@ public class RouteFinder {
         dijkstraResult.putTimeFromStart(from, 0);
         while (dijkstraResult.getTimeFromStart().size() > fixed.size()) {
             int currentTime = Integer.MAX_VALUE;
-            String current = null;
-            for (Map.Entry<String, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
             T current = null;
             for (Map.Entry<T, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
                 if (!fixed.contains(entry.getKey())) {
@@ -104,8 +125,6 @@ public class RouteFinder {
                 }
             }
             fixed.add(current);
-            for (Map.Entry<String, Integer> entry : graph.getOrDefault(current,Map.of()).entrySet()) {
-                String neighbor = entry.getKey();
             for (Map.Entry<T, Integer> entry : graph.getOrDefault(current, Map.of()).entrySet()) {
                 T neighbor = entry.getKey();
                 Integer neighborTime = dijkstraResult.getTimeFromStart().get(neighbor);
@@ -124,8 +143,6 @@ public class RouteFinder {
 
     }
 
-    public static Optional<List<PathPoint>> pathTo(String to, DijkstraResult dijkstraResult) {
-        List<PathPoint> path = new ArrayList<>();
     public static <T> Optional<List<PathPoint<T>>> pathTo(T to, DijkstraResult<T> dijkstraResult) {
         List<PathPoint<T>> path = new ArrayList<>();
         if (!dijkstraResult.getTimeFromStart().containsKey(to)) {
@@ -139,8 +156,6 @@ public class RouteFinder {
         return Optional.of(path.reversed());
     }
 
-    public static Optional<List<PathPoint>> routeThrough(List<String> pointList, Map<String, Map<String, Integer>> graph) {
-        List<PathPoint> route = new ArrayList<>();
     public static <T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
         List<PathPoint<T>> route = new ArrayList<>();
 
