@@ -2,15 +2,15 @@ package dijkstra;
 
 import java.util.Objects;
 
-public class PathPoint {
-    private final String point;
+public class PathPoint<T> {
+    private final T point;
     private final int time;
-    PathPoint(String point, int time){
+    PathPoint(T point, int time){
         this.point = point;
         this.time = time;
     }
 
-    public String getPoint() {
+    public T getPoint() {
         return point;
     }
 

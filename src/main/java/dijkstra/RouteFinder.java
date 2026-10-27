@@ -86,14 +86,16 @@ public class RouteFinder {
         return peakAndNeighbors;
     }
 
-    public static DijkstraResult dijkstra(String from, Map<String, Map<String, Integer>> graph) {
-        DijkstraResult dijkstraResult = new DijkstraResult();
-        Set<String> fixed = new HashSet<>();
+    public static <T> DijkstraResult<T> dijkstra(T from, Map<T, Map<T, Integer>> graph) {
+        DijkstraResult<T> dijkstraResult = new DijkstraResult<>();
+        Set<T> fixed = new HashSet<>();
         dijkstraResult.putTimeFromStart(from, 0);
         while (dijkstraResult.getTimeFromStart().size() > fixed.size()) {
             int currentTime = Integer.MAX_VALUE;
             String current = null;
             for (Map.Entry<String, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
+            T current = null;
+            for (Map.Entry<T, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
                 if (!fixed.contains(entry.getKey())) {
                     if (entry.getValue() < currentTime) {
                         currentTime = entry.getValue();
@@ -104,6 +106,8 @@ public class RouteFinder {
             fixed.add(current);
             for (Map.Entry<String, Integer> entry : graph.getOrDefault(current,Map.of()).entrySet()) {
                 String neighbor = entry.getKey();
+            for (Map.Entry<T, Integer> entry : graph.getOrDefault(current, Map.of()).entrySet()) {
+                T neighbor = entry.getKey();
                 Integer neighborTime = dijkstraResult.getTimeFromStart().get(neighbor);
                 if (!dijkstraResult.getTimeFromStart().containsKey(neighbor)) {
                     dijkstraResult.putTimeFromStart(neighbor, entry.getValue() + currentTime);
@@ -122,12 +126,14 @@ public class RouteFinder {
 
     public static Optional<List<PathPoint>> pathTo(String to, DijkstraResult dijkstraResult) {
         List<PathPoint> path = new ArrayList<>();
+    public static <T> Optional<List<PathPoint<T>>> pathTo(T to, DijkstraResult<T> dijkstraResult) {
+        List<PathPoint<T>> path = new ArrayList<>();
         if (!dijkstraResult.getTimeFromStart().containsKey(to)) {
             return Optional.empty();
         }
-        String current = to;
+        T current = to;
         while (current != null) {
-            path.add(new PathPoint(current, dijkstraResult.getTimeFromStart().get(current)));
+            path.add(new PathPoint<>(current, dijkstraResult.getTimeFromStart().get(current)));
             current = dijkstraResult.getPrevious().get(current);
         }
         return Optional.of(path.reversed());
@@ -135,20 +141,22 @@ public class RouteFinder {
 
     public static Optional<List<PathPoint>> routeThrough(List<String> pointList, Map<String, Map<String, Integer>> graph) {
         List<PathPoint> route = new ArrayList<>();
+    public static <T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
+        List<PathPoint<T>> route = new ArrayList<>();
 
         for (int i = 0; i < pointList.size() - 1; i++) {
-            Optional<List<PathPoint>> pathPart = pathTo(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
+            Optional<List<PathPoint<T>>> pathPart = pathTo(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
             if (pathPart.isEmpty()) {
                 return Optional.empty();
             }
             if (i == 0) {
                 route.addAll(pathPart.get());
             } else {
-                List<PathPoint> piece = pathPart.get();
+                List<PathPoint<T>> piece = pathPart.get();
                 piece.removeFirst();
                 int offset = route.getLast().getTime();
                 for (int j = 0; j < piece.size(); j++) {
-                    route.add(new PathPoint(piece.get(j).getPoint(), piece.get(j).getTime() + offset));
+                    route.add(new PathPoint<T>(piece.get(j).getPoint(), piece.get(j).getTime() + offset));
                 }
             }
         }
