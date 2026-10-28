@@ -1,22 +1,25 @@
 package dijkstra;
 
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.util.*;
 
 public class RouteFinder {
-
-
     public static void main(String[] args) {
-
-        ObjectMapper mapper = new ObjectMapper();
-        OsmFile file = mapper.readValue(new File("src/main/resources/osm-murowaniec.json"), OsmFile.class);
     }
 
     public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
         return mapper.readValue(new File(pathname), OsmFile.class);
+    }
+
+    public static double distanceBetweenTwoPoints(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double meanLat = Math.toRadians((lat1 + lat2) / 2);
+        double dx = dLon * 6371000 * Math.cos(meanLat);
+        double dy = dLat * 6371000;
+        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     }
 
     public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
