@@ -109,8 +109,8 @@ class RouteFinderTest {
         Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
         assertEquals(475, graph.size());
         Map<Long, Integer> expected = new HashMap<>();
-        expected.put(4797284557L, 1);
-        expected.put(10032256371L, 1);
+        expected.put(4797284557L, 11);
+        expected.put(10032256371L, 6);
 
         assertEquals(expected, graph.get(5715755082L));
     }
@@ -124,10 +124,10 @@ class RouteFinderTest {
         Optional<List<PathPoint<Long>>> result = RouteFinder.pathTo(10032256371L, RouteFinder.dijkstra(355986496L, graph));
         List<PathPoint<Long>> expectedResult = new ArrayList<>(List.of(
                 new PathPoint<>(355986496L, 0),
-                new PathPoint<>(5715755056L, 1),
-                new PathPoint<>(4797284557L, 2),
-                new PathPoint<>(5715755082L, 3),
-                new PathPoint<>(10032256371L, 4)));
+                new PathPoint<>(5715755056L, 5),
+                new PathPoint<>(4797284557L, 27),
+                new PathPoint<>(5715755082L, 38),
+                new PathPoint<>(10032256371L, 44)));
         assertEquals(expectedResult, result.get());
     }
 
@@ -140,5 +140,15 @@ class RouteFinderTest {
 
         double result = RouteFinder.distanceBetweenTwoPoints(lat1,lon1,lat2,lon2);
         assertEquals(5.18,result,0.01);
+    }
+
+    @Test
+    void graphEdgeWeightIsRoundedDistanceInMeters(){
+        ObjectMapper mapper = new ObjectMapper();
+        String pathname = "src/main/resources/osm-murowaniec.json";
+        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        assertEquals(5,graph.get(355986496L).get(5715755056L));
+
     }
 }

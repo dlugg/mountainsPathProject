@@ -7,6 +7,11 @@ import java.util.*;
 
 public class RouteFinder {
     public static void main(String[] args) {
+        ObjectMapper mapper = new ObjectMapper();
+        String pathname = "src/main/resources/osm-murowaniec.json";
+        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        System.out.println(graph);
     }
 
     public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
@@ -24,12 +29,26 @@ public class RouteFinder {
 
     public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
         Map<Long, Map<Long, Integer>> graph = new HashMap<>();
+        Map<Long, OsmElement> pointIdAndItCoordinates = new HashMap<>();
+
+        for (int i = 0; i < file.elements().size(); i++) {
+            if (file.elements().get(i).isNode()){
+                pointIdAndItCoordinates.put(file.elements().get(i).id(), file.elements().get(i));
+            }
+
+        }
         for (int i = 0; i < file.elements().size(); i++) {
             OsmElement element = file.elements().get(i);
             if (element.isTrail()) {
                 for (int j = 0; j < element.nodes().size() - 1; j++) {
-                    graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1), 1);
-                    graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j), 1);
+                    double lat1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lat();
+                    double lat2 = pointIdAndItCoordinates.get(element.nodes().get(j+1)).lat();
+                    double lon1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lon();
+                    double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j+1)).lon();
+                    graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
+                            (int) Math.round(distanceBetweenTwoPoints(lat1,lon1,lat2,lon2)));
+                    graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
+                            (int) Math.round(distanceBetweenTwoPoints(lat1,lon1,lat2,lon2)));
                 }
             }
         }

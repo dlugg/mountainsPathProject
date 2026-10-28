@@ -10,4 +10,7 @@ public record OsmElement(String type, long id, Double lat, Double lon, List<Long
         }
         return false;
     }
+    boolean isNode(){
+        return type().equals("node");
+    }
 }
