@@ -11,7 +11,8 @@ public class RouteFinder {
         String pathname = "src/main/resources/osm-murowaniec.json";
         OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
         Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
-        System.out.println(graph);
+//        System.out.println(closestPointToPlace(49.2434181,20.0071598, file,graph));
+        System.out.println(pathTo(5810136954L, dijkstra(355986496L, graph)).get());
     }
 
     public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
@@ -27,28 +28,51 @@ public class RouteFinder {
         return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     }
 
-    public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
-        Map<Long, Map<Long, Integer>> graph = new HashMap<>();
+    public static Map<Long, OsmElement> pointIdElementMapBuilder(OsmFile file) {
         Map<Long, OsmElement> pointIdAndItCoordinates = new HashMap<>();
-
         for (int i = 0; i < file.elements().size(); i++) {
-            if (file.elements().get(i).isNode()){
+            if (file.elements().get(i).isNode()) {
                 pointIdAndItCoordinates.put(file.elements().get(i).id(), file.elements().get(i));
             }
 
         }
+        return pointIdAndItCoordinates;
+    }
+
+    public static long closestPointToPlace(double lat, double lon, OsmFile file, Map<Long, Map<Long, Integer>> graph) {
+        Map<Long, OsmElement> pointIdAndItCoordinates = pointIdElementMapBuilder(file);
+        double closestPointDistance = Integer.MAX_VALUE;
+        long closestPointId = 0;
+
+
+        for (Map.Entry<Long, Map<Long, Integer>> entry : graph.entrySet()) {
+            OsmElement element = pointIdAndItCoordinates.get(entry.getKey());
+            long currentId = element.id();
+            double currentDistance = distanceBetweenTwoPoints(lat,lon, element.lat(), element.lon());
+            if (closestPointDistance>currentDistance){
+                closestPointDistance = currentDistance;
+                closestPointId = currentId;
+            }
+        }
+        return closestPointId;
+    }
+
+    public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
+        Map<Long, Map<Long, Integer>> graph = new HashMap<>();
+        Map<Long, OsmElement> pointIdAndItCoordinates = pointIdElementMapBuilder(file);
+
         for (int i = 0; i < file.elements().size(); i++) {
             OsmElement element = file.elements().get(i);
             if (element.isTrail()) {
                 for (int j = 0; j < element.nodes().size() - 1; j++) {
                     double lat1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lat();
-                    double lat2 = pointIdAndItCoordinates.get(element.nodes().get(j+1)).lat();
+                    double lat2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lat();
                     double lon1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lon();
-                    double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j+1)).lon();
+                    double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lon();
                     graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
-                            (int) Math.round(distanceBetweenTwoPoints(lat1,lon1,lat2,lon2)));
+                            (int) Math.round(distanceBetweenTwoPoints(lat1, lon1, lat2, lon2)));
                     graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
-                            (int) Math.round(distanceBetweenTwoPoints(lat1,lon1,lat2,lon2)));
+                            (int) Math.round(distanceBetweenTwoPoints(lat1, lon1, lat2, lon2)));
                 }
             }
         }
@@ -178,7 +202,8 @@ public class RouteFinder {
         return Optional.of(path.reversed());
     }
 
-    public static <T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
+    public static <
+            T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
         List<PathPoint<T>> route = new ArrayList<>();
 
         for (int i = 0; i < pointList.size() - 1; i++) {

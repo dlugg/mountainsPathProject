@@ -149,6 +149,25 @@ class RouteFinderTest {
         OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
         Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
         assertEquals(5,graph.get(355986496L).get(5715755056L));
+    }
+    @Test
+    void closestPointToMurowaniec(){
+        ObjectMapper mapper = new ObjectMapper();
+        String pathname = "src/main/resources/osm-murowaniec.json";
+        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        assertEquals(5810136954L,RouteFinder.closestPointToPlace(49.2434181,20.0071598, file,graph));
+    }
 
+    @Test
+    void routeFromAtoMurowaniecIsCorrect(){
+        ObjectMapper mapper = new ObjectMapper();
+        String pathname = "src/main/resources/osm-murowaniec.json";
+        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+
+        List<PathPoint<Long>> result = RouteFinder.pathTo(5810136954L, RouteFinder.dijkstra(355986496L, graph)).get();
+        assertEquals(0,result.getFirst().getTime());
+        assertEquals(153,result.getLast().getTime());
     }
 }

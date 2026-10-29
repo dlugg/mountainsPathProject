@@ -26,6 +26,14 @@ public class PathPoint<T> {
     }
 
     @Override
+    public String toString() {
+        return "PathPoint{" +
+                "point=" + point +
+                ", time=" + time +
+                '}';
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(point, time);
     }
