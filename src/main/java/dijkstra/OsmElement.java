@@ -3,7 +3,7 @@ package dijkstra;
 import java.util.List;
 import java.util.Map;
 
-public record OsmElement(String type, long id, Double lat, Double lon, List<Long> nodes, Map<String, String> tags) {
+public record OsmElement(String type, long id, Double lat, Double lon, List<Long> nodes, Map<String, String> tags, Coordinates center) {
     boolean isTrail() {
         if (tags() != null) {
             return tags().get("highway") != null;
@@ -12,5 +12,13 @@ public record OsmElement(String type, long id, Double lat, Double lon, List<Long
     }
     boolean isNode(){
         return type().equals("node");
+    }
+
+    Coordinates coordinates(){
+        if (this.isNode()){
+            return new Coordinates(lat,lon);
+        }else{
+            return center;
+        }
     }
 }

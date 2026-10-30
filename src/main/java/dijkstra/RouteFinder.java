@@ -10,9 +10,22 @@ public class RouteFinder {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
         OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
-//        System.out.println(closestPointToPlace(49.2434181,20.0071598, file,graph));
-        System.out.println(pathTo(5810136954L, dijkstra(355986496L, graph)).get());
+        System.out.println(findCoordinatesByName("Murowaniec", file));
+    }
+
+    public static Optional<Coordinates> findCoordinatesByName(String place, OsmFile file) {
+        for (int i = 0; i < file.elements().size(); i++) {
+            OsmElement element = file.elements().get(i);
+            if (!element.isNode()) {
+                String name = element.tags().get("name");
+                if (name != null) {
+                    if (element.tags().get("name").equals(place)) {
+                        return Optional.of(element.coordinates());
+                    }
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
@@ -48,8 +61,8 @@ public class RouteFinder {
         for (Map.Entry<Long, Map<Long, Integer>> entry : graph.entrySet()) {
             OsmElement element = pointIdAndItCoordinates.get(entry.getKey());
             long currentId = element.id();
-            double currentDistance = distanceBetweenTwoPoints(lat,lon, element.lat(), element.lon());
-            if (closestPointDistance>currentDistance){
+            double currentDistance = distanceBetweenTwoPoints(lat, lon, element.lat(), element.lon());
+            if (closestPointDistance > currentDistance) {
                 closestPointDistance = currentDistance;
                 closestPointId = currentId;
             }
