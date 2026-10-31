@@ -3,24 +3,70 @@ package dijkstra;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class RouteFinder {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        String pathname = "src/main/resources/osm-murowaniec.json";
+        String pathname = "src/main/resources/export.json";
         OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        System.out.println(findCoordinatesByName("Murowaniec", file));
+        Map<Long, Map<Long, Integer>> graph = graphBuilderFromOsmFile(file);
+        List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec","Czarny Staw Gąsienicowy", "Kasprowy Wierch", "Kuźnice"));
+        List<Long> pathPoints = new ArrayList<>();
+        for (int i = 0; i < names.size(); i++) {
+            Coordinates coordinates = findCoordinatesByName(names.get(i), file).get();
+            pathPoints.add(closestPointToPlace(coordinates.lat(), coordinates.lon(), file, graph));
+        }
+        saveXmlToGpx(gpxBuilder(routeThrough(pathPoints,graph).get(),pointIdElementMapBuilder(file),names));
+
     }
 
+
+    public static  String gpxBuilder(List<PathPoint<Long>> pathPoints, Map<Long, OsmElement> pointIdMap, List<String> names) {
+        StringBuilder xml = new StringBuilder();
+        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+                .append("<gpx version=\"1.1\" creator=\"mountainsPathProject\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n")
+                .append("<trk>\n")
+                .append("<name>")
+                .append(String.join(" - ", names))
+                .append("</name>\n")
+                .append("<trkseg>\n");
+        for (int i = 0; i < pathPoints.size(); i++) {
+            Double lat = pointIdMap.get(pathPoints.get(i).getPoint()).coordinates().lat();
+            Double lon = pointIdMap.get(pathPoints.get(i).getPoint()).coordinates().lon();
+            xml.append("<trkpt lat=")
+                    .append("\"" + lat + "\"")
+                    .append(" ").append("lon=")
+                    .append("\"" + lon + "\"></trkpt>\n");
+
+        }
+        xml.append("</trkseg>\n")
+                .append("</trk>\n")
+                .append("</gpx>");
+
+        return xml.toString();
+    }
+public static void saveXmlToGpx(String xml) throws IOException {
+    Files.writeString(Path.of("route.gpx"),xml);
+}
     public static Optional<Coordinates> findCoordinatesByName(String place, OsmFile file) {
         for (int i = 0; i < file.elements().size(); i++) {
             OsmElement element = file.elements().get(i);
-            if (!element.isNode()) {
-                String name = element.tags().get("name");
-                if (name != null) {
-                    if (element.tags().get("name").equals(place)) {
+            if (element.tags() != null) {
+                String namePl = element.tags().get("name:pl");
+                if (namePl != null) {
+                    if (element.tags().get("name:pl").equals(place)) {
                         return Optional.of(element.coordinates());
+                    }
+                } else {
+                    String name = element.tags().get("name");
+                    if (name != null) {
+                        if (element.tags().get("name").equals(place)) {
+                            return Optional.of(element.coordinates());
+                        }
                     }
                 }
             }
@@ -52,7 +98,8 @@ public class RouteFinder {
         return pointIdAndItCoordinates;
     }
 
-    public static long closestPointToPlace(double lat, double lon, OsmFile file, Map<Long, Map<Long, Integer>> graph) {
+    public static long closestPointToPlace(double lat, double lon, OsmFile
+            file, Map<Long, Map<Long, Integer>> graph) {
         Map<Long, OsmElement> pointIdAndItCoordinates = pointIdElementMapBuilder(file);
         double closestPointDistance = Integer.MAX_VALUE;
         long closestPointId = 0;
