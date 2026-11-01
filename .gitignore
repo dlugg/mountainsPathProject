@@ -39,3 +39,5 @@ build/
 ### Mac OS ###
 .DS_Store
 
+/src/main/resources/export.json
+/route.gpx

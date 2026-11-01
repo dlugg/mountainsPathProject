@@ -3,24 +3,24 @@ package dijkstra;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DijkstraResult {
-    private final  Map<String,Integer> timeFromStart = new HashMap<>();
-    private final Map<String,String> previous = new HashMap<>();
+public class DijkstraResult<T> {
+    private final  Map<T,Integer> costFromStart = new HashMap<>();
+    private final Map<T,T> previous = new HashMap<>();
 
-    public Map<String, Integer> getTimeFromStart() {
-        return timeFromStart;
+    public Map<T, Integer> getCostFromStart() {
+        return costFromStart;
     }
 
-    public Map<String, String> getPrevious() {
+    public Map<T, T> getPrevious() {
         return previous;
     }
 
-    public void putTimeFromStart(String peak, Integer time) {
-        timeFromStart.put(peak,time);
+    public void putCostFromStart(T point, Integer time) {
+        costFromStart.put(point,time);
     }
 
-    public void putPrevious(String peak, String fromWho) {
-        previous.put(peak,fromWho);
+    public void putPrevious(T point, T previous) {
+        this.previous.put(point,previous);
     }
 
 }

@@ -1,13 +1,147 @@
 package dijkstra;
 
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class RouteFinder {
+    public static void main(String[] args) throws IOException {
+        long readFile = System.nanoTime();
+        ObjectMapper mapper = new ObjectMapper();
+        String pathname = "src/main/resources/export.json";
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, OsmElement> indexNodesById = indexNodesById(file);
+        long msFile = (System.nanoTime() - readFile) / 1_000_000;
+        System.out.println("чтение осм файла заняло: " + msFile + " мс");
+        long graphBuild = System.nanoTime();
+        Map<Long, Map<Long, Integer>> graph = buildGraph(file);
+        long msGraph = (System.nanoTime() - graphBuild) / 1_000_000;
+        System.out.println("построение графа заняло: " + msGraph + " мс");
+        List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec", "Kasprowy Wierch", "Kuźnice"));
+        List<Long> pathPoints = new ArrayList<>();
+        long start = System.nanoTime();
+        for (int i = 0; i < names.size(); i++) {
+            Coordinates coordinates = findCoordinatesByName(names.get(i), file).get();
+            pathPoints.add(nearestVertex(coordinates.lat(), coordinates.lon(), indexNodesById, graph).get());
+        }
+        saveGpx(buildGpx(routeThrough(pathPoints, graph).get(), indexNodesById, names));
+        long ms = (System.nanoTime() - start) / 1_000_000;
+        System.out.println("заняло: " + ms + " мс");
+
+    }
 
 
-    public static void main(String[] args) {
+    public static String buildGpx(List<PathPoint<Long>> pathPoints, Map<Long, OsmElement> indexNodesById, List<String> names) {
+        StringBuilder xml = new StringBuilder();
+        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+                .append("<gpx version=\"1.1\" creator=\"mountainsPathProject\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n")
+                .append("<trk>\n")
+                .append("<name>")
+                .append(String.join(" - ", names))
+                .append("</name>\n")
+                .append("<trkseg>\n");
+        for (int i = 0; i < pathPoints.size(); i++) {
+            Double lat = indexNodesById.get(pathPoints.get(i).getPoint()).coordinates().lat();
+            Double lon = indexNodesById.get(pathPoints.get(i).getPoint()).coordinates().lon();
+            xml.append("<trkpt lat=")
+                    .append("\"" + lat + "\"")
+                    .append(" ").append("lon=")
+                    .append("\"" + lon + "\"></trkpt>\n");
+
+        }
+        xml.append("</trkseg>\n")
+                .append("</trk>\n")
+                .append("</gpx>");
+
+        return xml.toString();
+    }
+
+    public static void saveGpx(String xml) throws IOException {
+        Files.writeString(Path.of("route.gpx"), xml);
+    }
+
+    public static Optional<Coordinates> findCoordinatesByName(String place, OsmFile file) {
+        for (int i = 0; i < file.elements().size(); i++) {
+            OsmElement element = file.elements().get(i);
+
+            if (element.tags() != null) {
+                if (place.equals(element.tags().get("name")) || place.equals(element.tags().get("name:pl"))) {
+                    return Optional.of(element.coordinates());
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static OsmFile readOsmFile(ObjectMapper mapper, String pathname) {
+        return mapper.readValue(new File(pathname), OsmFile.class);
+    }
+
+    public static double distanceMeters(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double meanLat = Math.toRadians((lat1 + lat2) / 2);
+        double dx = dLon * 6371000 * Math.cos(meanLat);
+        double dy = dLat * 6371000;
+        return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    }
+
+    public static Map<Long, OsmElement> indexNodesById(OsmFile file) {
+        Map<Long, OsmElement> pointIdAndItCoordinates = new HashMap<>();
+        for (int i = 0; i < file.elements().size(); i++) {
+            if (file.elements().get(i).isNode()) {
+                pointIdAndItCoordinates.put(file.elements().get(i).id(), file.elements().get(i));
+            }
+
+        }
+        return pointIdAndItCoordinates;
+    }
+
+    public static Optional<Long> nearestVertex(double lat, double lon, Map<Long, OsmElement> indexNodesById, Map<Long, Map<Long, Integer>> graph) {
+        double closestPointDistance = Double.MAX_VALUE;
+        long closestPointId = 0;
 
 
+        for (Map.Entry<Long, Map<Long, Integer>> entry : graph.entrySet()) {
+            OsmElement element = indexNodesById.get(entry.getKey());
+            long currentId = element.id();
+            double currentDistance = distanceMeters(lat, lon, element.lat(), element.lon());
+            if (closestPointDistance > currentDistance) {
+                closestPointDistance = currentDistance;
+                closestPointId = currentId;
+            }
+        }
+        if (closestPointId == 0) {
+            return Optional.empty();
+        } else {
+            return Optional.of(closestPointId);
+        }
+    }
+
+    public static Map<Long, Map<Long, Integer>> buildGraph(OsmFile file) {
+        Map<Long, Map<Long, Integer>> graph = new HashMap<>();
+        Map<Long, OsmElement> pointIdAndItCoordinates = indexNodesById(file);
+
+        for (int i = 0; i < file.elements().size(); i++) {
+            OsmElement element = file.elements().get(i);
+            if (element.isTrail()) {
+                for (int j = 0; j < element.nodes().size() - 1; j++) {
+                    double lat1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lat();
+                    double lat2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lat();
+                    double lon1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lon();
+                    double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lon();
+                    graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
+                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                    graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
+                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                }
+            }
+        }
+        return graph;
     }
 
     public static Map<String, Map<String, Integer>> graphABCD() {
@@ -86,31 +220,31 @@ public class RouteFinder {
         return peakAndNeighbors;
     }
 
-    public static DijkstraResult dijkstra(String from, Map<String, Map<String, Integer>> graph) {
-        DijkstraResult dijkstraResult = new DijkstraResult();
-        Set<String> fixed = new HashSet<>();
-        dijkstraResult.putTimeFromStart(from, 0);
-        while (dijkstraResult.getTimeFromStart().size() > fixed.size()) {
-            int currentTime = Integer.MAX_VALUE;
-            String current = null;
-            for (Map.Entry<String, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
+    public static <T> DijkstraResult<T> dijkstra(T from, Map<T, Map<T, Integer>> graph) {
+        DijkstraResult<T> dijkstraResult = new DijkstraResult<>();
+        Set<T> fixed = new HashSet<>();
+        dijkstraResult.putCostFromStart(from, 0);
+        while (dijkstraResult.getCostFromStart().size() > fixed.size()) {
+            int currentCost = Integer.MAX_VALUE;
+            T current = null;
+            for (Map.Entry<T, Integer> entry : dijkstraResult.getCostFromStart().entrySet()) {
                 if (!fixed.contains(entry.getKey())) {
-                    if (entry.getValue() < currentTime) {
-                        currentTime = entry.getValue();
+                    if (entry.getValue() < currentCost) {
+                        currentCost = entry.getValue();
                         current = entry.getKey();
                     }
                 }
             }
             fixed.add(current);
-            for (Map.Entry<String, Integer> entry : graph.getOrDefault(current,Map.of()).entrySet()) {
-                String neighbor = entry.getKey();
-                Integer neighborTime = dijkstraResult.getTimeFromStart().get(neighbor);
-                if (!dijkstraResult.getTimeFromStart().containsKey(neighbor)) {
-                    dijkstraResult.putTimeFromStart(neighbor, entry.getValue() + currentTime);
+            for (Map.Entry<T, Integer> entry : graph.getOrDefault(current, Map.of()).entrySet()) {
+                T neighbor = entry.getKey();
+                Integer neighborCost = dijkstraResult.getCostFromStart().get(neighbor);
+                if (!dijkstraResult.getCostFromStart().containsKey(neighbor)) {
+                    dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                     dijkstraResult.putPrevious(neighbor, current);
                 } else {
-                    if (entry.getValue() + currentTime < neighborTime) {
-                        dijkstraResult.putTimeFromStart(neighbor, entry.getValue() + currentTime);
+                    if (entry.getValue() + currentCost < neighborCost) {
+                        dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                         dijkstraResult.putPrevious(neighbor, current);
                     }
                 }
@@ -120,35 +254,36 @@ public class RouteFinder {
 
     }
 
-    public static Optional<List<PathPoint>> pathTo(String to, DijkstraResult dijkstraResult) {
-        List<PathPoint> path = new ArrayList<>();
-        if (!dijkstraResult.getTimeFromStart().containsKey(to)) {
+    public static <T> Optional<List<PathPoint<T>>> pathTo(T to, DijkstraResult<T> dijkstraResult) {
+        List<PathPoint<T>> path = new ArrayList<>();
+        if (!dijkstraResult.getCostFromStart().containsKey(to)) {
             return Optional.empty();
         }
-        String current = to;
+        T current = to;
         while (current != null) {
-            path.add(new PathPoint(current, dijkstraResult.getTimeFromStart().get(current)));
+            path.add(new PathPoint<>(current, dijkstraResult.getCostFromStart().get(current)));
             current = dijkstraResult.getPrevious().get(current);
         }
         return Optional.of(path.reversed());
     }
 
-    public static Optional<List<PathPoint>> routeThrough(List<String> pointList, Map<String, Map<String, Integer>> graph) {
-        List<PathPoint> route = new ArrayList<>();
+    public static <
+            T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
+        List<PathPoint<T>> route = new ArrayList<>();
 
         for (int i = 0; i < pointList.size() - 1; i++) {
-            Optional<List<PathPoint>> pathPart = pathTo(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
+            Optional<List<PathPoint<T>>> pathPart = pathTo(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
             if (pathPart.isEmpty()) {
                 return Optional.empty();
             }
             if (i == 0) {
                 route.addAll(pathPart.get());
             } else {
-                List<PathPoint> piece = pathPart.get();
+                List<PathPoint<T>> piece = pathPart.get();
                 piece.removeFirst();
-                int offset = route.getLast().getTime();
+                int offset = route.getLast().getCost();
                 for (int j = 0; j < piece.size(); j++) {
-                    route.add(new PathPoint(piece.get(j).getPoint(), piece.get(j).getTime() + offset));
+                    route.add(new PathPoint<T>(piece.get(j).getPoint(), piece.get(j).getCost() + offset));
                 }
             }
         }

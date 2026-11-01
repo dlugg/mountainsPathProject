@@ -1,0 +1,11 @@
+[out:json][timeout:90];
+(
+  way["highway"~"path|footway|track|steps"](49.215,19.96,49.275,20.03);
+  nwr["tourism"~"alpine_hut|viewpoint"](49.215,19.96,49.275,20.03);
+  nwr["natural"~"peak|water"](49.215,19.96,49.275,20.03);
+  nwr["waterway"="waterfall"](49.215,19.96,49.275,20.03);
+  nwr["place"](49.215,19.96,49.275,20.03);
+);
+out body center;
+>;
+out skel qt;
