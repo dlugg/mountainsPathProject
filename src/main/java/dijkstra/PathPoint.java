@@ -4,37 +4,37 @@ import java.util.Objects;
 
 public class PathPoint<T> {
     private final T point;
-    private final int time;
-    PathPoint(T point, int time){
+    private final int cost;
+    PathPoint(T point, int cost){
         this.point = point;
-        this.time = time;
+        this.cost = cost;
     }
 
     public T getPoint() {
         return point;
     }
 
-    public int getTime() {
-        return time;
+    public int getCost() {
+        return cost;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         PathPoint pathPoint = (PathPoint) o;
-        return time == pathPoint.time && Objects.equals(point, pathPoint.point);
+        return cost == pathPoint.cost && Objects.equals(point, pathPoint.point);
     }
 
     @Override
     public String toString() {
         return "PathPoint{" +
                 "point=" + point +
-                ", time=" + time +
+                ", cost=" + cost +
                 '}';
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(point, time);
+        return Objects.hash(point, cost);
     }
 }

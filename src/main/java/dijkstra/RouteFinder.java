@@ -13,28 +13,29 @@ public class RouteFinder {
         long readFile = System.nanoTime();
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/export.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, OsmElement> indexNodesById = indexNodesById(file);
         long msFile = (System.nanoTime() - readFile) / 1_000_000;
         System.out.println("чтение осм файла заняло: " + msFile + " мс");
         long graphBuild = System.nanoTime();
-        Map<Long, Map<Long, Integer>> graph = graphBuilderFromOsmFile(file);
-        long msGraph = (System.nanoTime()-graphBuild)/1_000_000;
+        Map<Long, Map<Long, Integer>> graph = buildGraph(file);
+        long msGraph = (System.nanoTime() - graphBuild) / 1_000_000;
         System.out.println("построение графа заняло: " + msGraph + " мс");
         List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec", "Kasprowy Wierch", "Kuźnice"));
         List<Long> pathPoints = new ArrayList<>();
         long start = System.nanoTime();
         for (int i = 0; i < names.size(); i++) {
             Coordinates coordinates = findCoordinatesByName(names.get(i), file).get();
-            pathPoints.add(closestPointToPlace(coordinates.lat(), coordinates.lon(), file, graph));
+            pathPoints.add(nearestVertex(coordinates.lat(), coordinates.lon(), indexNodesById, graph).get());
         }
-        saveXmlToGpx(gpxBuilder(routeThrough(pathPoints,graph).get(),pointIdElementMapBuilder(file),names));
+        saveGpx(buildGpx(routeThrough(pathPoints, graph).get(), indexNodesById, names));
         long ms = (System.nanoTime() - start) / 1_000_000;
         System.out.println("заняло: " + ms + " мс");
 
     }
 
 
-    public static  String gpxBuilder(List<PathPoint<Long>> pathPoints, Map<Long, OsmElement> pointIdMap, List<String> names) {
+    public static String buildGpx(List<PathPoint<Long>> pathPoints, Map<Long, OsmElement> indexNodesById, List<String> names) {
         StringBuilder xml = new StringBuilder();
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
                 .append("<gpx version=\"1.1\" creator=\"mountainsPathProject\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n")
@@ -44,8 +45,8 @@ public class RouteFinder {
                 .append("</name>\n")
                 .append("<trkseg>\n");
         for (int i = 0; i < pathPoints.size(); i++) {
-            Double lat = pointIdMap.get(pathPoints.get(i).getPoint()).coordinates().lat();
-            Double lon = pointIdMap.get(pathPoints.get(i).getPoint()).coordinates().lon();
+            Double lat = indexNodesById.get(pathPoints.get(i).getPoint()).coordinates().lat();
+            Double lon = indexNodesById.get(pathPoints.get(i).getPoint()).coordinates().lon();
             xml.append("<trkpt lat=")
                     .append("\"" + lat + "\"")
                     .append(" ").append("lon=")
@@ -58,36 +59,29 @@ public class RouteFinder {
 
         return xml.toString();
     }
-public static void saveXmlToGpx(String xml) throws IOException {
-    Files.writeString(Path.of("route.gpx"),xml);
-}
+
+    public static void saveGpx(String xml) throws IOException {
+        Files.writeString(Path.of("route.gpx"), xml);
+    }
+
     public static Optional<Coordinates> findCoordinatesByName(String place, OsmFile file) {
         for (int i = 0; i < file.elements().size(); i++) {
             OsmElement element = file.elements().get(i);
+
             if (element.tags() != null) {
-                String namePl = element.tags().get("name:pl");
-                if (namePl != null) {
-                    if (element.tags().get("name:pl").equals(place)) {
-                        return Optional.of(element.coordinates());
-                    }
-                } else {
-                    String name = element.tags().get("name");
-                    if (name != null) {
-                        if (element.tags().get("name").equals(place)) {
-                            return Optional.of(element.coordinates());
-                        }
-                    }
+                if (place.equals(element.tags().get("name")) || place.equals(element.tags().get("name:pl"))) {
+                    return Optional.of(element.coordinates());
                 }
             }
         }
         return Optional.empty();
     }
 
-    public static OsmFile osmFileReader(ObjectMapper mapper, String pathname) {
+    public static OsmFile readOsmFile(ObjectMapper mapper, String pathname) {
         return mapper.readValue(new File(pathname), OsmFile.class);
     }
 
-    public static double distanceBetweenTwoPoints(double lat1, double lon1, double lat2, double lon2) {
+    public static double distanceMeters(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
         double meanLat = Math.toRadians((lat1 + lat2) / 2);
@@ -96,7 +90,7 @@ public static void saveXmlToGpx(String xml) throws IOException {
         return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
     }
 
-    public static Map<Long, OsmElement> pointIdElementMapBuilder(OsmFile file) {
+    public static Map<Long, OsmElement> indexNodesById(OsmFile file) {
         Map<Long, OsmElement> pointIdAndItCoordinates = new HashMap<>();
         for (int i = 0; i < file.elements().size(); i++) {
             if (file.elements().get(i).isNode()) {
@@ -107,28 +101,30 @@ public static void saveXmlToGpx(String xml) throws IOException {
         return pointIdAndItCoordinates;
     }
 
-    public static long closestPointToPlace(double lat, double lon, OsmFile
-            file, Map<Long, Map<Long, Integer>> graph) {
-        Map<Long, OsmElement> pointIdAndItCoordinates = pointIdElementMapBuilder(file);
-        double closestPointDistance = Integer.MAX_VALUE;
+    public static Optional<Long> nearestVertex(double lat, double lon, Map<Long, OsmElement> indexNodesById, Map<Long, Map<Long, Integer>> graph) {
+        double closestPointDistance = Double.MAX_VALUE;
         long closestPointId = 0;
 
 
         for (Map.Entry<Long, Map<Long, Integer>> entry : graph.entrySet()) {
-            OsmElement element = pointIdAndItCoordinates.get(entry.getKey());
+            OsmElement element = indexNodesById.get(entry.getKey());
             long currentId = element.id();
-            double currentDistance = distanceBetweenTwoPoints(lat, lon, element.lat(), element.lon());
+            double currentDistance = distanceMeters(lat, lon, element.lat(), element.lon());
             if (closestPointDistance > currentDistance) {
                 closestPointDistance = currentDistance;
                 closestPointId = currentId;
             }
         }
-        return closestPointId;
+        if (closestPointId == 0) {
+            return Optional.empty();
+        } else {
+            return Optional.of(closestPointId);
+        }
     }
 
-    public static Map<Long, Map<Long, Integer>> graphBuilderFromOsmFile(OsmFile file) {
+    public static Map<Long, Map<Long, Integer>> buildGraph(OsmFile file) {
         Map<Long, Map<Long, Integer>> graph = new HashMap<>();
-        Map<Long, OsmElement> pointIdAndItCoordinates = pointIdElementMapBuilder(file);
+        Map<Long, OsmElement> pointIdAndItCoordinates = indexNodesById(file);
 
         for (int i = 0; i < file.elements().size(); i++) {
             OsmElement element = file.elements().get(i);
@@ -139,9 +135,9 @@ public static void saveXmlToGpx(String xml) throws IOException {
                     double lon1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lon();
                     double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lon();
                     graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
-                            (int) Math.round(distanceBetweenTwoPoints(lat1, lon1, lat2, lon2)));
+                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
                     graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
-                            (int) Math.round(distanceBetweenTwoPoints(lat1, lon1, lat2, lon2)));
+                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
                 }
             }
         }
@@ -227,14 +223,14 @@ public static void saveXmlToGpx(String xml) throws IOException {
     public static <T> DijkstraResult<T> dijkstra(T from, Map<T, Map<T, Integer>> graph) {
         DijkstraResult<T> dijkstraResult = new DijkstraResult<>();
         Set<T> fixed = new HashSet<>();
-        dijkstraResult.putTimeFromStart(from, 0);
-        while (dijkstraResult.getTimeFromStart().size() > fixed.size()) {
-            int currentTime = Integer.MAX_VALUE;
+        dijkstraResult.putCostFromStart(from, 0);
+        while (dijkstraResult.getCostFromStart().size() > fixed.size()) {
+            int currentCost = Integer.MAX_VALUE;
             T current = null;
-            for (Map.Entry<T, Integer> entry : dijkstraResult.getTimeFromStart().entrySet()) {
+            for (Map.Entry<T, Integer> entry : dijkstraResult.getCostFromStart().entrySet()) {
                 if (!fixed.contains(entry.getKey())) {
-                    if (entry.getValue() < currentTime) {
-                        currentTime = entry.getValue();
+                    if (entry.getValue() < currentCost) {
+                        currentCost = entry.getValue();
                         current = entry.getKey();
                     }
                 }
@@ -242,13 +238,13 @@ public static void saveXmlToGpx(String xml) throws IOException {
             fixed.add(current);
             for (Map.Entry<T, Integer> entry : graph.getOrDefault(current, Map.of()).entrySet()) {
                 T neighbor = entry.getKey();
-                Integer neighborTime = dijkstraResult.getTimeFromStart().get(neighbor);
-                if (!dijkstraResult.getTimeFromStart().containsKey(neighbor)) {
-                    dijkstraResult.putTimeFromStart(neighbor, entry.getValue() + currentTime);
+                Integer neighborCost = dijkstraResult.getCostFromStart().get(neighbor);
+                if (!dijkstraResult.getCostFromStart().containsKey(neighbor)) {
+                    dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                     dijkstraResult.putPrevious(neighbor, current);
                 } else {
-                    if (entry.getValue() + currentTime < neighborTime) {
-                        dijkstraResult.putTimeFromStart(neighbor, entry.getValue() + currentTime);
+                    if (entry.getValue() + currentCost < neighborCost) {
+                        dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                         dijkstraResult.putPrevious(neighbor, current);
                     }
                 }
@@ -260,12 +256,12 @@ public static void saveXmlToGpx(String xml) throws IOException {
 
     public static <T> Optional<List<PathPoint<T>>> pathTo(T to, DijkstraResult<T> dijkstraResult) {
         List<PathPoint<T>> path = new ArrayList<>();
-        if (!dijkstraResult.getTimeFromStart().containsKey(to)) {
+        if (!dijkstraResult.getCostFromStart().containsKey(to)) {
             return Optional.empty();
         }
         T current = to;
         while (current != null) {
-            path.add(new PathPoint<>(current, dijkstraResult.getTimeFromStart().get(current)));
+            path.add(new PathPoint<>(current, dijkstraResult.getCostFromStart().get(current)));
             current = dijkstraResult.getPrevious().get(current);
         }
         return Optional.of(path.reversed());
@@ -285,9 +281,9 @@ public static void saveXmlToGpx(String xml) throws IOException {
             } else {
                 List<PathPoint<T>> piece = pathPart.get();
                 piece.removeFirst();
-                int offset = route.getLast().getTime();
+                int offset = route.getLast().getCost();
                 for (int j = 0; j < piece.size(); j++) {
-                    route.add(new PathPoint<T>(piece.get(j).getPoint(), piece.get(j).getTime() + offset));
+                    route.add(new PathPoint<T>(piece.get(j).getPoint(), piece.get(j).getCost() + offset));
                 }
             }
         }

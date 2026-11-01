@@ -19,7 +19,7 @@ class RouteFinderTest {
         expectedDijkstraResult.put("C", 3);
         expectedDijkstraResult.put("D", 9);
 
-        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getTimeFromStart());
+        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getCostFromStart());
 
 
     }
@@ -38,7 +38,7 @@ class RouteFinderTest {
         expectedDijkstraResult.put("CZS", 191);
         expectedDijkstraResult.put("HALA", 143);
 
-        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getTimeFromStart());
+        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getCostFromStart());
     }
 
     @Test
@@ -59,12 +59,12 @@ class RouteFinderTest {
         expectedDijkstraResult.put("HALA", 143);
         expectedDijkstraResult.put("TOP", 215);
 
-        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getTimeFromStart());
+        assertEquals(expectedDijkstraResult, dijkstraMethodResult.getCostFromStart());
 
     }
 
     @Test
-    void bestPathToReachablePointReturnsPath() {
+    void pathToReachablePointReturnsPath    () {
         Optional<List<PathPoint<String>>> bestPathResult = RouteFinder.pathTo("D", RouteFinder.dijkstra("A", RouteFinder.graphABCD()));
         List<PathPoint> expectedList = new ArrayList<>(List.of(new PathPoint("A", 0), new PathPoint("C", 3),
                 new PathPoint("B", 7), new PathPoint("D", 9)));
@@ -72,7 +72,7 @@ class RouteFinderTest {
     }
 
     @Test
-    void bestPathToUnreachablePointIsEmpty() {
+    void pathToUnreachablePointIsEmpty() {
         Map<String, Map<String, Integer>> graph = RouteFinder.graphKaspr();
         Map<String, Integer> neighborsOfPark = new HashMap<>();
         neighborsOfPark.put("KUZ", 10);
@@ -105,8 +105,8 @@ class RouteFinderTest {
     void graphBuilderReturnCorrectGraphFromOsmFile() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
         assertEquals(475, graph.size());
         Map<Long, Integer> expected = new HashMap<>();
         expected.put(4797284557L, 11);
@@ -119,8 +119,8 @@ class RouteFinderTest {
     void dijkstraAtGraphFromOsmData() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
         Optional<List<PathPoint<Long>>> result = RouteFinder.pathTo(10032256371L, RouteFinder.dijkstra(355986496L, graph));
         List<PathPoint<Long>> expectedResult = new ArrayList<>(List.of(
                 new PathPoint<>(355986496L, 0),
@@ -138,7 +138,7 @@ class RouteFinderTest {
         double lon1 = 20.0054246;
         double lon2 = 20.0053672;
 
-        double result = RouteFinder.distanceBetweenTwoPoints(lat1, lon1, lat2, lon2);
+        double result = RouteFinder.distanceMeters(lat1, lon1, lat2, lon2);
         assertEquals(5.18, result, 0.01);
     }
 
@@ -146,37 +146,39 @@ class RouteFinderTest {
     void graphEdgeWeightIsRoundedDistanceInMeters() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
         assertEquals(5, graph.get(355986496L).get(5715755056L));
     }
 
     @Test
     void closestPointToMurowaniec() {
+
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
-        assertEquals(5810136954L, RouteFinder.closestPointToPlace(49.2434181, 20.0071598, file, graph));
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long,OsmElement> indexNodesById = RouteFinder.indexNodesById(file);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
+        assertEquals(5810136954L, RouteFinder.nearestVertex(49.2434181, 20.0071598, indexNodesById, graph).get());
     }
 
     @Test
     void routeFromAtoMurowaniecIsCorrect() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
-        Map<Long, Map<Long, Integer>> graph = RouteFinder.graphBuilderFromOsmFile(file);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
 
         List<PathPoint<Long>> result = RouteFinder.pathTo(5810136954L, RouteFinder.dijkstra(355986496L, graph)).get();
-        assertEquals(0, result.getFirst().getTime());
-        assertEquals(153, result.getLast().getTime());
+        assertEquals(0, result.getFirst().getCost());
+        assertEquals(153, result.getLast().getCost());
     }
 
     @Test
     void findCoordinatesByNameReturnsCorrectCoordinatesForExistingPlace() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
         Optional<Coordinates> existingPlace = RouteFinder.findCoordinatesByName("Murowaniec", file);
         Optional<Coordinates> nonExistingPlace = RouteFinder.findCoordinatesByName("Warsaw", file);
 
@@ -186,10 +188,10 @@ class RouteFinderTest {
     }
 
     @Test
-    void findCoordinatesByNameReturnsCorrectCoordinatesForNonExistingPlace() {
+    void findCoordinatesByNameReturnsEmptyForUnknownPlace() {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
-        OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
         Optional<Coordinates> nonExistingPlace = RouteFinder.findCoordinatesByName("Warsaw", file);
         assertEquals(Optional.empty(), nonExistingPlace);
     }
