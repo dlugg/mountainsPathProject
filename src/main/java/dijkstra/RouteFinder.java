@@ -10,17 +10,26 @@ import java.util.*;
 
 public class RouteFinder {
     public static void main(String[] args) throws IOException {
+        long readFile = System.nanoTime();
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/export.json";
         OsmFile file = RouteFinder.osmFileReader(mapper, pathname);
+        long msFile = (System.nanoTime() - readFile) / 1_000_000;
+        System.out.println("чтение осм файла заняло: " + msFile + " мс");
+        long graphBuild = System.nanoTime();
         Map<Long, Map<Long, Integer>> graph = graphBuilderFromOsmFile(file);
-        List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec","Czarny Staw Gąsienicowy", "Kasprowy Wierch", "Kuźnice"));
+        long msGraph = (System.nanoTime()-graphBuild)/1_000_000;
+        System.out.println("построение графа заняло: " + msGraph + " мс");
+        List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec", "Kasprowy Wierch", "Kuźnice"));
         List<Long> pathPoints = new ArrayList<>();
+        long start = System.nanoTime();
         for (int i = 0; i < names.size(); i++) {
             Coordinates coordinates = findCoordinatesByName(names.get(i), file).get();
             pathPoints.add(closestPointToPlace(coordinates.lat(), coordinates.lon(), file, graph));
         }
         saveXmlToGpx(gpxBuilder(routeThrough(pathPoints,graph).get(),pointIdElementMapBuilder(file),names));
+        long ms = (System.nanoTime() - start) / 1_000_000;
+        System.out.println("заняло: " + ms + " мс");
 
     }
 
