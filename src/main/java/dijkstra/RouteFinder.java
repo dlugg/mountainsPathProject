@@ -21,7 +21,7 @@ public class RouteFinder {
         Map<Long, Map<Long, Integer>> graph = buildGraph(file);
         long msGraph = (System.nanoTime() - graphBuild) / 1_000_000;
         System.out.println("построение графа заняло: " + msGraph + " мс");
-        List<String> names = new ArrayList<>(List.of("Kuźnice", "Murowaniec", "Kasprowy Wierch", "Kuźnice"));
+        List<String> names = new ArrayList<>(List.of("Kuźnice", "Orla Perć", "Kasprowy Wierch", "Kuźnice"));
         List<Long> pathPoints = new ArrayList<>();
         long start = System.nanoTime();
         for (int i = 0; i < names.size(); i++) {
@@ -134,10 +134,15 @@ public class RouteFinder {
                     double lat2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lat();
                     double lon1 = pointIdAndItCoordinates.get(element.nodes().get(j)).lon();
                     double lon2 = pointIdAndItCoordinates.get(element.nodes().get(j + 1)).lon();
-                    graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
-                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
-                    graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
-                            (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                    if (element.isOneWay()) {
+                        graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
+                                (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                    } else {
+                        graph.computeIfAbsent(element.nodes().get(j), k -> new HashMap<>()).put(element.nodes().get(j + 1),
+                                (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                        graph.computeIfAbsent(element.nodes().get(j + 1), k -> new HashMap<>()).put(element.nodes().get(j),
+                                (int) Math.round(distanceMeters(lat1, lon1, lat2, lon2)));
+                    }
                 }
             }
         }

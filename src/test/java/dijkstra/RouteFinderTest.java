@@ -64,7 +64,7 @@ class RouteFinderTest {
     }
 
     @Test
-    void pathToReachablePointReturnsPath    () {
+    void pathToReachablePointReturnsPath() {
         Optional<List<PathPoint<String>>> bestPathResult = RouteFinder.pathTo("D", RouteFinder.dijkstra("A", RouteFinder.graphABCD()));
         List<PathPoint> expectedList = new ArrayList<>(List.of(new PathPoint("A", 0), new PathPoint("C", 3),
                 new PathPoint("B", 7), new PathPoint("D", 9)));
@@ -157,7 +157,7 @@ class RouteFinderTest {
         ObjectMapper mapper = new ObjectMapper();
         String pathname = "src/main/resources/osm-murowaniec.json";
         OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
-        Map<Long,OsmElement> indexNodesById = RouteFinder.indexNodesById(file);
+        Map<Long, OsmElement> indexNodesById = RouteFinder.indexNodesById(file);
         Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(file);
         assertEquals(5810136954L, RouteFinder.nearestVertex(49.2434181, 20.0071598, indexNodesById, graph).get());
     }
@@ -180,7 +180,6 @@ class RouteFinderTest {
         String pathname = "src/main/resources/osm-murowaniec.json";
         OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
         Optional<Coordinates> existingPlace = RouteFinder.findCoordinatesByName("Murowaniec", file);
-        Optional<Coordinates> nonExistingPlace = RouteFinder.findCoordinatesByName("Warsaw", file);
 
         assertEquals(49.2434181, existingPlace.get().lat());
         assertEquals(20.0071598, existingPlace.get().lon());
@@ -194,5 +193,31 @@ class RouteFinderTest {
         OsmFile file = RouteFinder.readOsmFile(mapper, pathname);
         Optional<Coordinates> nonExistingPlace = RouteFinder.findCoordinatesByName("Warsaw", file);
         assertEquals(Optional.empty(), nonExistingPlace);
+    }
+
+    @Test
+    void onewayTrailIsRoutedOnlyForward() {
+        OsmElement p1 = new OsmElement("node", 1L, 49.000, 20.000, null, null, null);
+        OsmElement p2 = new OsmElement("node", 2L, 49.000, 20.001, null, null, null);
+        OsmElement p3 = new OsmElement("node", 3L, 49.001, 20.0005, null, null, null);
+
+        OsmElement pathA = new OsmElement("way", 100L, null, null,
+                List.of(1L, 2L),
+                Map.of("highway", "path", "oneway", "yes"),
+                null);
+
+        OsmElement pathB = new OsmElement("way", 200L, null, null,
+                List.of(2L, 3L, 1L),
+                Map.of("highway", "path"),
+                null);
+
+        OsmFile osmFile = new OsmFile(List.of(p1, p2, p3, pathA, pathB));
+        Map<Long, Map<Long, Integer>> graph = RouteFinder.buildGraph(osmFile);
+        DijkstraResult<Long> dijkstraMethodResult = RouteFinder.dijkstra(1L, graph);
+        Optional<List<PathPoint<Long>>> result = RouteFinder.pathTo(2L, dijkstraMethodResult);
+        assertEquals(73, result.get().getLast().getCost());
+        DijkstraResult<Long> dijkstraMethodResult2 = RouteFinder.dijkstra(2L, graph);
+        Optional<List<PathPoint<Long>>> result2 = RouteFinder.pathTo(1L, dijkstraMethodResult2);
+        assertEquals(234, result2.get().getLast().getCost());
     }
 }
