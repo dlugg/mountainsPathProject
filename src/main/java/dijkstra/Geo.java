@@ -1,7 +1,8 @@
 package dijkstra;
 
 public class Geo {
-    final static int EARTH_RADIUS_IN_METERS=6_371_000;
+    final static int EARTH_RADIUS_IN_METERS = 6_371_000;
+
     public static double distanceMeters(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
@@ -9,5 +10,20 @@ public class Geo {
         double dx = dLon * EARTH_RADIUS_IN_METERS * Math.cos(meanLat);
         double dy = dLat * EARTH_RADIUS_IN_METERS;
         return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+    }
+
+    public static int munterTime(double distanceMeters, Double startElevation, Double finishElevation, double pace) {
+        double distanceUnits = distanceMeters / 1_000;
+        int time;
+        if (finishElevation - startElevation > 0) {
+            double ascentUnits = (finishElevation - startElevation) / 100;
+            double units = distanceUnits + ascentUnits;
+            time = (int) Math.round(units / pace * 3600);
+        } else {
+            double descentUnits = Math.abs((finishElevation - startElevation)) / 200;
+            double units = distanceUnits + descentUnits;
+            time = (int) Math.round(units / pace * 3600);
+        }
+        return time;
     }
 }
