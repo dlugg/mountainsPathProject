@@ -11,16 +11,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PlaceFinderTest {
     static OsmFile file;
+    static Map<Long,Double> elevations;
     @BeforeAll
     static void osmFileRead() {
         ObjectMapper mapper = new ObjectMapper();
-        String pathname = "src/test/resources/osm-murowaniec.json";
-        file = OsmReader.readOsmFile(mapper, pathname);
+        String osmPath = "src/test/resources/osm-murowaniec.json";
+        file = OsmReader.readOsmFile(mapper, osmPath);
+        String elevationPath = "src/test/resources/elevation-murowaniec.json";
+        elevations = OsmReader.readElevationFile(mapper, elevationPath);
     }
     @Test
     void closestPointToMurowaniec() {
         Map<Long, OsmElement> indexNodesById = OsmReader.indexNodesById(file);
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file);
+        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file,elevations,4);
         assertEquals(5810136954L, PlaceFinder.nearestVertex(49.2434181, 20.0071598, indexNodesById, graph).get());
     }
 
