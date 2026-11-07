@@ -6,20 +6,23 @@ public class RouteFinder {
 
 
     public static <T> DijkstraResult<T> dijkstra(T from, Map<T, Map<T, Integer>> graph) {
+        PriorityQueue<Point<T>> queue = new PriorityQueue<>(Comparator.comparingInt(Point::cost));
         DijkstraResult<T> dijkstraResult = new DijkstraResult<>();
         Set<T> fixed = new HashSet<>();
         dijkstraResult.putCostFromStart(from, 0);
-        while (dijkstraResult.getCostFromStart().size() > fixed.size()) {
-            int currentCost = Integer.MAX_VALUE;
-            T current = null;
-            for (Map.Entry<T, Integer> entry : dijkstraResult.getCostFromStart().entrySet()) {
-                if (!fixed.contains(entry.getKey())) {
-                    if (entry.getValue() < currentCost) {
-                        currentCost = entry.getValue();
-                        current = entry.getKey();
-                    }
-                }
+        queue.add(new Point<>(from, 0));
+        while (!queue.isEmpty()) {
+            int currentCost;
+            T current;
+            Point<T> bestPoint = queue.poll();
+            if (!fixed.contains(bestPoint.point())) {
+                currentCost = bestPoint.cost();
+                current = bestPoint.point();
+            } else {
+                continue;
             }
+
+
             fixed.add(current);
             for (Map.Entry<T, Integer> entry : graph.getOrDefault(current, Map.of()).entrySet()) {
                 T neighbor = entry.getKey();
@@ -27,10 +30,12 @@ public class RouteFinder {
                 if (!dijkstraResult.getCostFromStart().containsKey(neighbor)) {
                     dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                     dijkstraResult.putPrevious(neighbor, current);
+                    queue.add(new Point<>(neighbor,entry.getValue()+currentCost));
                 } else {
                     if (entry.getValue() + currentCost < neighborCost) {
                         dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                         dijkstraResult.putPrevious(neighbor, current);
+                        queue.add(new Point<>(neighbor,entry.getValue()+currentCost));
                     }
                 }
             }

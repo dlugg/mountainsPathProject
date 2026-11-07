@@ -10,12 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RouteFinderTest {
     static OsmFile file;
-
+    static Map<Long,Double> elevations;
     @BeforeAll
     static void osmFileRead() {
         ObjectMapper mapper = new ObjectMapper();
-        String pathname = "src/test/resources/osm-murowaniec.json";
-        file = OsmReader.readOsmFile(mapper, pathname);
+        String osmPath = "src/test/resources/osm-murowaniec.json";
+        file = OsmReader.readOsmFile(mapper, osmPath);
+        String elevationPath = "src/test/resources/elevation-murowaniec.json";
+        elevations = OsmReader.readElevationFile(mapper, elevationPath);
     }
 
     @Test
@@ -113,23 +115,23 @@ class RouteFinderTest {
 
     @Test
     void dijkstraAtGraphFromOsmData() {
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file);
+        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file,elevations,4);
         Optional<List<PathPoint<Long>>> result = RouteFinder.pathTo(10032256371L, RouteFinder.dijkstra(355986496L, graph));
         List<PathPoint<Long>> expectedResult = new ArrayList<>(List.of(
                 new PathPoint<>(355986496L, 0),
-                new PathPoint<>(5715755056L, 5),
-                new PathPoint<>(4797284557L, 27),
-                new PathPoint<>(5715755082L, 38),
-                new PathPoint<>(10032256371L, 44)));
+                new PathPoint<>(5715755056L, 10),
+                new PathPoint<>(4797284557L, 41),
+                new PathPoint<>(5715755082L, 52),
+                new PathPoint<>(10032256371L, 58)));
         assertEquals(expectedResult, result.get());
     }
 
     @Test
     void routeFromAtoMurowaniecIsCorrect() {
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file);
+        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file,elevations,4);
         List<PathPoint<Long>> result = RouteFinder.pathTo(5810136954L, RouteFinder.dijkstra(355986496L, graph)).get();
         assertEquals(0, result.getFirst().getCost());
-        assertEquals(153, result.getLast().getCost());
+        assertEquals(239, result.getLast().getCost());
     }
 
 

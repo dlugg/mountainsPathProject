@@ -15,4 +15,15 @@ public class GeoTest {
         double result = Geo.distanceMeters(lat1, lon1, lat2, lon2);
         assertEquals(5.18, result, 0.01);
     }
+
+    @Test
+    void munterTimeDependsAtElevation(){
+        int horizontal = Geo.munterTime(100, 1000., 1000., 4);
+        int elevationGain = Geo.munterTime(100, 1000., 1100., 4);
+        int elevationLoss = Geo.munterTime(100, 1100., 1000., 4);
+
+        assertEquals(90,horizontal);
+        assertEquals(990,elevationGain);
+        assertEquals(711,elevationLoss);
+    }
 }
