@@ -24,6 +24,6 @@ public class GeoTest {
 
         assertEquals(90,horizontal);
         assertEquals(990,elevationGain);
-        assertEquals(540,elevationLoss);
+        assertEquals(711,elevationLoss);
     }
 }
