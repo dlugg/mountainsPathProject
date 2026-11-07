@@ -18,12 +18,15 @@ public class ElevationDownloader {
         String pathname = "src/main/resources/export.json";
         OsmFile file = OsmReader.readOsmFile(mapper, pathname);
         Map<Long, OsmElement> indexNodesById = OsmReader.indexNodesById(file);
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file);
+
         Map<Long, Double> idElevation = new HashMap<>();
-        Set<Long> idSet = new HashSet<>(graph.keySet());
-        for (Map<Long, Integer> neighbors : graph.values()) {
-            idSet.addAll(neighbors.keySet());
+        Set<Long> idSet = new HashSet<>();
+        for (OsmElement element : file.elements()) {
+            if (element.isTrail()) {
+                idSet.addAll(element.nodes());
+            }
         }
+        System.out.println(idSet.size());
         List<Long> idsAll = new ArrayList<>(idSet);
         for (int i = 0; i < idsAll.size(); i += 100) {
             List<Long> idPart = new ArrayList<>(idsAll.subList(i, Math.min(i + 100, idsAll.size())));
