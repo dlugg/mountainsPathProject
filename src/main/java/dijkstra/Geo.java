@@ -20,7 +20,7 @@ public class Geo {
             double units = distanceUnits + ascentUnits;
             time = (int) Math.round(units / pace * 3600);
         } else {
-            double descentUnits = Math.abs((finishElevation - startElevation)) / 200;
+            double descentUnits = Math.abs((finishElevation - startElevation)) / 145;
             double units = distanceUnits + descentUnits;
             time = (int) Math.round(units / pace * 3600);
         }

@@ -1,5 +1,6 @@
 package dijkstra;
 
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
@@ -21,4 +22,12 @@ public class OsmReader {
         }
         return pointIdAndItCoordinates;
     }
+
+    public static Map<Long,Double>  readElevationFile(ObjectMapper mapper, String pathname){
+        Map<Long, Double> elevations = mapper.readValue(
+                new File(pathname),
+                new TypeReference<Map<Long, Double>>() {});
+        return elevations;
+    }
+
 }
