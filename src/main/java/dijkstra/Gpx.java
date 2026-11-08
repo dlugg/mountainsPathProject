@@ -36,22 +36,5 @@ public class Gpx {
         Files.writeString(Path.of("route.gpx"), xml);
     }
 
-    public static String formatDuration(int seconds) {
-        int hours = seconds / 3600;
-        int minutes = (seconds % 3600) / 60;
-        return hours + " h " + minutes + " min";
-    }
-
-    public static String routeLengthMeters(List<PathPoint<Long>> route, Map<Long, OsmElement> pointIdAndItCoordinates) {
-        double routeLength = 0;
-        for (int i = 0; i < route.size() - 1; i++) {
-            double lat1 = pointIdAndItCoordinates.get(route.get(i).getPoint()).lat();
-            double lat2 = pointIdAndItCoordinates.get(route.get(i + 1).getPoint()).lat();
-            double lon1 = pointIdAndItCoordinates.get(route.get(i).getPoint()).lon();
-            double lon2 = pointIdAndItCoordinates.get(route.get(i + 1).getPoint()).lon();
-            routeLength += Geo.distanceMeters(lat1, lon1, lat2, lon2);
-        }
-        return String.format("%.2f", routeLength/1000);
-    }
 }
 
