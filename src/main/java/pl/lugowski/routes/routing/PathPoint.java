@@ -1,11 +1,11 @@
-package dijkstra;
+package pl.lugowski.routes.routing;
 
 import java.util.Objects;
 
 public class PathPoint<T> {
     private final T point;
     private final int cost;
-    PathPoint(T point, int cost){
+    public PathPoint(T point, int cost){
         this.point = point;
         this.cost = cost;
     }

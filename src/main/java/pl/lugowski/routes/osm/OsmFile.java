@@ -1,4 +1,4 @@
-package dijkstra;
+package pl.lugowski.routes.osm;
 
 import java.util.List;
 

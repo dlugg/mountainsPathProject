@@ -1,5 +1,7 @@
-package dijkstra;
+package pl.lugowski.routes.osm;
 
+
+import pl.lugowski.routes.geo.Geo;
 
 import java.util.HashMap;
 import java.util.Map;

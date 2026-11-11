@@ -1,6 +1,7 @@
-package dijkstra;
+package pl.lugowski.routes;
 
 import org.junit.jupiter.api.Test;
+import pl.lugowski.routes.geo.Geo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

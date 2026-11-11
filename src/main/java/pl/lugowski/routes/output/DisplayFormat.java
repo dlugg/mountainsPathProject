@@ -1,4 +1,4 @@
-package dijkstra;
+package pl.lugowski.routes.output;
 
 public class DisplayFormat {
 

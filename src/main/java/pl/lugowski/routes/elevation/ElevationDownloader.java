@@ -1,5 +1,8 @@
-package dijkstra;
+package pl.lugowski.routes.elevation;
 
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.osm.OsmFile;
+import pl.lugowski.routes.osm.OsmReader;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;

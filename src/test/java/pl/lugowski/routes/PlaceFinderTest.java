@@ -1,7 +1,13 @@
-package dijkstra;
+package pl.lugowski.routes;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import pl.lugowski.routes.geo.Coordinates;
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.osm.OsmFile;
+import pl.lugowski.routes.osm.OsmGraphBuilder;
+import pl.lugowski.routes.osm.OsmReader;
+import pl.lugowski.routes.places.PlaceFinder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
