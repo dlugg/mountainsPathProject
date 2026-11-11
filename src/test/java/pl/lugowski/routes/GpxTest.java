@@ -3,6 +3,7 @@ package pl.lugowski.routes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.output.DisplayFormat;
 import pl.lugowski.routes.output.Gpx;
 import pl.lugowski.routes.routing.PathPoint;
 
@@ -35,8 +36,9 @@ public class GpxTest {
         pathPointList = new ArrayList<>(List.of(
                 new PathPoint<>(1L, 0),
                 new PathPoint<>(2L, 10),
-                new PathPoint<>(3L, 20)));
-        xml = Gpx.build(pathPointList, idNode, names);
+                new PathPoint<>(3L, 6300)));
+        List<List<PathPoint<Long>>> legs = new ArrayList<>(List.of(pathPointList));
+        xml = Gpx.build(legs, idNode, names);
     }
 
     @Test
@@ -50,7 +52,15 @@ public class GpxTest {
     }
 
     @Test
-    void buildNamesTrackAfterPlaces() {
-        assertTrue(xml.contains("<name>Kuźnice - Murowaniec</name>"));
+    void buildNamesTrackAfterPlacesWithTime() {
+        assertTrue(xml.contains("<name>Kuźnice - Murowaniec " + "(1 h 45 min)</name>"));
+    }
+
+    @Test
+    void buildContainesCoordinatesOfAllPoints(){
+        assertTrue(xml.contains("lat=\"49.2432731\""));
+        assertTrue(xml.contains("lat=\"49.023239\""));
+        assertTrue(xml.contains("lat=\"49.123235701\""));
+
     }
 }
