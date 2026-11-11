@@ -1,4 +1,4 @@
-package dijkstra;
+package pl.lugowski.routes.routing;
 
 import java.util.*;
 

@@ -1,4 +1,9 @@
-package dijkstra;
+package pl.lugowski.routes.places;
+
+import pl.lugowski.routes.geo.Coordinates;
+import pl.lugowski.routes.geo.Geo;
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.osm.OsmFile;
 
 import java.util.Map;
 import java.util.Optional;

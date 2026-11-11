@@ -1,7 +1,10 @@
-package dijkstra;
+package pl.lugowski.routes;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.output.Gpx;
+import pl.lugowski.routes.routing.PathPoint;
 
 import java.util.ArrayList;
 import java.util.HashMap;

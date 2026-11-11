@@ -1,5 +1,16 @@
-package dijkstra;
+package pl.lugowski.routes;
 
+import pl.lugowski.routes.geo.Coordinates;
+import pl.lugowski.routes.geo.Geo;
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.osm.OsmFile;
+import pl.lugowski.routes.osm.OsmGraphBuilder;
+import pl.lugowski.routes.osm.OsmReader;
+import pl.lugowski.routes.output.DisplayFormat;
+import pl.lugowski.routes.output.Gpx;
+import pl.lugowski.routes.places.PlaceFinder;
+import pl.lugowski.routes.routing.PathPoint;
+import pl.lugowski.routes.routing.RouteFinder;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;

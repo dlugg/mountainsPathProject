@@ -1,4 +1,7 @@
-package dijkstra;
+package pl.lugowski.routes.geo;
+
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.routing.PathPoint;
 
 import java.util.List;
 import java.util.Map;

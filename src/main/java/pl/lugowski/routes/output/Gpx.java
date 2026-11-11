@@ -1,4 +1,7 @@
-package dijkstra;
+package pl.lugowski.routes.output;
+
+import pl.lugowski.routes.osm.OsmElement;
+import pl.lugowski.routes.routing.PathPoint;
 
 import java.io.IOException;
 import java.nio.file.Files;

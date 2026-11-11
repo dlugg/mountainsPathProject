@@ -1,4 +1,4 @@
-package dijkstra;
+package pl.lugowski.routes;
 
 import java.util.HashMap;
 import java.util.Map;
