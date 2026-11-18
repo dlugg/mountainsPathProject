@@ -30,12 +30,12 @@ public class RouteFinder {
                 if (!dijkstraResult.getCostFromStart().containsKey(neighbor)) {
                     dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                     dijkstraResult.putPrevious(neighbor, current);
-                    queue.add(new Point<>(neighbor,entry.getValue()+currentCost));
+                    queue.add(new Point<>(neighbor, entry.getValue() + currentCost));
                 } else {
                     if (entry.getValue() + currentCost < neighborCost) {
                         dijkstraResult.putCostFromStart(neighbor, entry.getValue() + currentCost);
                         dijkstraResult.putPrevious(neighbor, current);
-                        queue.add(new Point<>(neighbor,entry.getValue()+currentCost));
+                        queue.add(new Point<>(neighbor, entry.getValue() + currentCost));
                     }
                 }
             }
@@ -57,19 +57,30 @@ public class RouteFinder {
         return Optional.of(path.reversed());
     }
 
-    public static <
-            T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
-        List<PathPoint<T>> route = new ArrayList<>();
+    public static <T> Optional<List<List<PathPoint<T>>>> routeLegs(List<T> pointList, Map<T, Map<T, Integer>> graph) {
+        List<List<PathPoint<T>>> legs = new ArrayList<>();
 
         for (int i = 0; i < pointList.size() - 1; i++) {
             Optional<List<PathPoint<T>>> pathPart = pathTo(pointList.get(i + 1), dijkstra(pointList.get(i), graph));
             if (pathPart.isEmpty()) {
                 return Optional.empty();
             }
+            legs.add(pathPart.get());
+        }
+        return Optional.of(legs);
+    }
+
+    public static <T> Optional<List<PathPoint<T>>> routeThrough(List<T> pointList, Map<T, Map<T, Integer>> graph) {
+        List<PathPoint<T>> route = new ArrayList<>();
+        Optional<List<List<PathPoint<T>>>> legs = routeLegs(pointList, graph);
+        if (legs.isEmpty()) {
+            return Optional.empty();
+        }
+        for (int i = 0; i < legs.get().size(); i++) {
             if (i == 0) {
-                route.addAll(pathPart.get());
+                route.addAll(legs.get().get(i));
             } else {
-                List<PathPoint<T>> piece = pathPart.get();
+                List<PathPoint<T>> piece = legs.get().get(i);
                 piece.removeFirst();
                 int offset = route.getLast().getCost();
                 for (int j = 0; j < piece.size(); j++) {

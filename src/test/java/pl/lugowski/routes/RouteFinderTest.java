@@ -16,7 +16,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RouteFinderTest {
     static OsmFile file;
-    static Map<Long,Double> elevations;
+    static Map<Long, Double> elevations;
+
     @BeforeAll
     static void osmFileRead() {
         ObjectMapper mapper = new ObjectMapper();
@@ -121,7 +122,7 @@ class RouteFinderTest {
 
     @Test
     void dijkstraAtGraphFromOsmData() {
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file,elevations,4);
+        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file, elevations, 4);
         Optional<List<PathPoint<Long>>> result = RouteFinder.pathTo(10032256371L, RouteFinder.dijkstra(355986496L, graph));
         List<PathPoint<Long>> expectedResult = new ArrayList<>(List.of(
                 new PathPoint<>(355986496L, 0),
@@ -134,11 +135,50 @@ class RouteFinderTest {
 
     @Test
     void routeFromAtoMurowaniecIsCorrect() {
-        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file,elevations,4);
+        Map<Long, Map<Long, Integer>> graph = OsmGraphBuilder.buildGraph(file, elevations, 4);
         List<PathPoint<Long>> result = RouteFinder.pathTo(5810136954L, RouteFinder.dijkstra(355986496L, graph)).get();
         assertEquals(0, result.getFirst().getCost());
         assertEquals(239, result.getLast().getCost());
     }
 
+    @Test
+    void routeLegsReturnsOneLegPerPairOfPlaces() {
+        Map<String, Map<String, Integer>> graph = TestGraphs.graphKaspr();
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ", "CZS", "KASP", "KUZ"));
+        assertEquals(3, RouteFinder.routeLegs(listOfPoints, graph).get().size());
+    }
 
+    @Test
+    void routeLegsFirstLegEndsAtFirstStop() {
+        Map<String, Map<String, Integer>> graph = TestGraphs.graphKaspr();
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ", "CZS", "KASP", "KUZ"));
+        assertEquals(191, RouteFinder.routeLegs(listOfPoints, graph).get().getFirst().getLast().getCost());
+    }
+
+    @Test
+    void routeLegsEachLegStartsAtZeroCost() {
+        Map<String, Map<String, Integer>> graph = TestGraphs.graphKaspr();
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ", "CZS", "KASP", "KUZ"));
+        Optional<List<List<PathPoint<String>>>>  result = RouteFinder.routeLegs(listOfPoints, graph);
+        assertEquals(0, result.get().get(1).getFirst().getCost());
+        assertEquals(135, result.get().get(1).getLast().getCost());
+    }
+    @Test
+    void routeLegsLastLegEndsAtFinish(){
+        Map<String, Map<String, Integer>> graph = TestGraphs.graphKaspr();
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ", "CZS", "KASP", "KUZ"));
+
+        assertEquals(139,RouteFinder.routeLegs(listOfPoints,graph).get().getLast().getLast().getCost());
+    }
+
+    @Test
+    void routeLegsThroughNotReachablePointReturnsEmptyOptional(){
+        Map<String, Map<String, Integer>> graph = TestGraphs.graphKaspr();
+        Map<String, Integer> neighborsOfPark = new HashMap<>();
+        neighborsOfPark.put("KUZ", 10);
+        graph.put("PARK", neighborsOfPark);
+        List<String> listOfPoints = new ArrayList<>(List.of("KUZ", "PARK", "KUZ"));
+        Optional<List<List<PathPoint<String>>>> methodResult = RouteFinder.routeLegs(listOfPoints, graph);
+        assertEquals(Optional.empty(), methodResult);
+    }
 }

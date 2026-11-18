@@ -54,7 +54,7 @@ public class Main {
             System.out.println("No route is found");
             return;
         }
-        Gpx.save(Gpx.build(route, indexNodesById, names));
+        Gpx.save(Gpx.build(RouteFinder.routeLegs(pathPoints,graph).get(), indexNodesById, names));
         System.out.println("Route from " + names.getFirst() + " to " + names.getLast() + " is");
         System.out.println(DisplayFormat.kilometers(Geo.routeLengthMeters(route, indexNodesById)));
         System.out.println(DisplayFormat.duration(route.getLast().getCost()));
